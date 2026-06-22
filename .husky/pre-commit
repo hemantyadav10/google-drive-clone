@@ -1,0 +1,7 @@
+  echo "🔍 Running pre-commit checks..."
+  npm run lint:staged
+
+  echo "🧠 Checking TypeScript types..."
+  npm run type-check
+
+  echo "✅ All checks passed. Proceeding with commit."
