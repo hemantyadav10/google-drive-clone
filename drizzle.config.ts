@@ -9,7 +9,7 @@ export default defineConfig({
   schema: "./src/db/schema.ts",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env["DB_URL"]!,
+    url: DB_URL,
   },
   strict: true,
   verbose: true,

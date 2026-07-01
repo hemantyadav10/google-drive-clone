@@ -2,7 +2,7 @@ import http from "node:http";
 import app from "./app.js";
 import { env } from "./config/env.js";
 import { pool, testDbConnection } from "./db/index.js";
-import { logger } from "./utils/logger.js";
+import { logger } from "./utils/index.js";
 
 let server: http.Server;
 let isShuttingDown = false;

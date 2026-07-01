@@ -15,7 +15,7 @@ import {
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   if (res.headersSent) return next(err);
 
-  let error = err;
+  let error: unknown = err;
 
   // Normalize ZodError into ApiError for uniform error handling
   if (error instanceof ZodError) {

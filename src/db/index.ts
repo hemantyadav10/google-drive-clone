@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { env } from "../config/env.js";
-import { logger } from "../utils/logger.js";
+import { logger } from "../utils/index.js";
 
 export const pool: Pool = new Pool({
   connectionString: env.DB_URL,
@@ -25,3 +25,5 @@ export async function testDbConnection(): Promise<void> {
     throw error;
   }
 }
+
+export type Database = typeof db;
