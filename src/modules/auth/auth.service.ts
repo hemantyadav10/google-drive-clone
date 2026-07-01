@@ -2,6 +2,7 @@ import {
   DUMMY_PASSWORD_HASH,
   SESSION_LIFETIME_MS,
 } from "../../constants/index.js";
+import type { UserSession } from "../../db/schema.js";
 import {
   comparePassword,
   ConflictError,
@@ -11,13 +12,18 @@ import {
   hashToken,
   isBreachedPassword,
   logger,
+  NotFoundError,
   UnauthorizedError,
   ValidationError,
 } from "../../utils/index.js";
 import type { UserService } from "../user/user.service.js";
 import type { AuthRepository } from "./auth.repository.js";
 import type { LoginDto, RegisterDto } from "./auth.schema.js";
-import type { LoginResult, SessionMetadata } from "./auth.types.js";
+import type {
+  LoginResult,
+  SessionMetadata,
+  SessionSummaryWithCurrent,
+} from "./auth.types.js";
 
 export class AuthService {
   constructor(
@@ -96,5 +102,44 @@ export class AuthService {
     const tokenHash = hashToken(sessionToken);
 
     await this.authRepository.deleteSession(tokenHash);
+  }
+
+  async findValidSession(sessionToken: string): Promise<UserSession> {
+    const tokenHash = hashToken(sessionToken);
+
+    const session = await this.authRepository.findValidSession(tokenHash);
+
+    if (!session) {
+      throw new UnauthorizedError("Authentication required");
+    }
+
+    return session;
+  }
+
+  async logoutAll(userId: string): Promise<void> {
+    await this.authRepository.deleteAllSessionsForUser(userId);
+  }
+
+  async listSessions(
+    userId: string,
+    currentSessionId: string,
+  ): Promise<SessionSummaryWithCurrent[]> {
+    const sessions = await this.authRepository.findAllSessionsForUser(userId);
+
+    return sessions.map((session) => ({
+      ...session,
+      isCurrent: session.id === currentSessionId,
+    }));
+  }
+
+  async revokeSession(sessionId: string, userId: string): Promise<void> {
+    const deleted = await this.authRepository.deleteSessionForUser(
+      sessionId,
+      userId,
+    );
+
+    if (!deleted) {
+      throw new NotFoundError("Session not found");
+    }
   }
 }

@@ -14,3 +14,16 @@ export interface SessionMetadata {
 export interface LoginResult {
   sessionToken: string;
 }
+
+export type SessionSummary = {
+  id: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  lastActiveAt: Date;
+  createdAt: Date;
+  expiresAt: Date;
+};
+
+export type SessionSummaryWithCurrent = SessionSummary & {
+  isCurrent: boolean;
+};

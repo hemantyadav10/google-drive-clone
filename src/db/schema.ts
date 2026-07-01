@@ -52,4 +52,4 @@ export const userSessions = pgTable("user_sessions", {
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
-export type UserSession = typeof userSessions.$inferInsert;
+export type UserSession = typeof userSessions.$inferSelect;

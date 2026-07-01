@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { env } from "../config/env.js";
 import { logger } from "./logger.js";
 
 type PasswordBreachResult = {
@@ -15,6 +16,11 @@ type PasswordBreachResult = {
 export async function isBreachedPassword(
   password: string,
 ): Promise<PasswordBreachResult> {
+  if (env.NODE_ENV !== "production") {
+    logger.info("Skipping HIBP check in non-production environment");
+    return { breached: false };
+  }
+
   const hash = crypto
     .createHash("sha1")
     .update(password)
