@@ -1,30 +1,29 @@
-import { and, desc, eq, gt } from "drizzle-orm";
-import { type Database } from "../../db/index.js";
+import { and, desc, eq, gt, ne } from "drizzle-orm";
+import type { DbClient } from "../../db/index.js";
 import { userSessions, type UserSession } from "../../db/schema.js";
+import { ApiError } from "../../utils/api-error.js";
 import type { CreateSessionData, SessionSummary } from "./auth.types.js";
 
 export class AuthRepository {
-  constructor(private readonly db: Database) {}
-
-  async createSession(data: CreateSessionData): Promise<UserSession> {
-    const [session] = await this.db
-      .insert(userSessions)
-      .values(data)
-      .returning();
-
-    if (!session) throw new Error("Failed to create session");
+  async createSession(
+    db: DbClient,
+    data: CreateSessionData,
+  ): Promise<UserSession> {
+    const [session] = await db.insert(userSessions).values(data).returning();
+    if (!session) throw new ApiError("Failed to create session");
 
     return session;
   }
 
-  async deleteSession(tokenHash: string): Promise<void> {
-    await this.db
-      .delete(userSessions)
-      .where(eq(userSessions.tokenHash, tokenHash));
+  async deleteSession(db: DbClient, tokenHash: string): Promise<void> {
+    await db.delete(userSessions).where(eq(userSessions.tokenHash, tokenHash));
   }
 
-  async findValidSession(tokenHash: string): Promise<UserSession | null> {
-    const [session] = await this.db
+  async findValidSession(
+    db: DbClient,
+    tokenHash: string,
+  ): Promise<UserSession | null> {
+    const [session] = await db
       .select()
       .from(userSessions)
       .where(
@@ -37,15 +36,20 @@ export class AuthRepository {
     return session ?? null;
   }
 
-  async deleteAllSessionsForUser(userId: string): Promise<void> {
-    await this.db.delete(userSessions).where(eq(userSessions.userId, userId));
+  async deleteAllSessionsForUser(db: DbClient, userId: string): Promise<void> {
+    await db.delete(userSessions).where(eq(userSessions.userId, userId));
   }
 
-  async findAllSessionsForUser(userId: string): Promise<SessionSummary[]> {
-    return this.db
+  async findAllSessionsForUser(
+    db: DbClient,
+    userId: string,
+  ): Promise<SessionSummary[]> {
+    return db
       .select({
         id: userSessions.id,
-        userAgent: userSessions.userAgent,
+        browserName: userSessions.browserName,
+        osName: userSessions.osName,
+        deviceType: userSessions.deviceType,
         ipAddress: userSessions.ipAddress,
         lastActiveAt: userSessions.lastActiveAt,
         createdAt: userSessions.createdAt,
@@ -62,10 +66,11 @@ export class AuthRepository {
   }
 
   async deleteSessionForUser(
+    db: DbClient,
     sessionId: string,
     userId: string,
   ): Promise<boolean> {
-    const result = await this.db
+    const result = await db
       .delete(userSessions)
       .where(
         and(eq(userSessions.id, sessionId), eq(userSessions.userId, userId)),
@@ -73,5 +78,27 @@ export class AuthRepository {
       .returning({ id: userSessions.id });
 
     return result.length > 0;
+  }
+
+  async deleteAllSessionsForUserExcept(
+    db: DbClient,
+    userId: string,
+    currentSessionId: string,
+  ): Promise<void> {
+    await db
+      .delete(userSessions)
+      .where(
+        and(
+          eq(userSessions.userId, userId),
+          ne(userSessions.id, currentSessionId),
+        ),
+      );
+  }
+
+  async touchLastActive(db: DbClient, sessionId: string): Promise<void> {
+    await db
+      .update(userSessions)
+      .set({ lastActiveAt: new Date() })
+      .where(eq(userSessions.id, sessionId));
   }
 }

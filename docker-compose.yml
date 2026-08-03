@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:18
+    image: postgres:18-alpine
     container_name: drive-clone-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -11,5 +11,22 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql
 
+  redis:
+    image: redis:7-alpine
+    container_name: drive-clone-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: driveclone-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
 volumes:
   pg_data:
+  redis_data:

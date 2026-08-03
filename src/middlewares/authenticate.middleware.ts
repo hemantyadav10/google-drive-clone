@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { SESSION_COOKIE_NAME } from "../config/cookies.js";
+import { ErrorCodes } from "../constants/error-codes.js";
 import { authService } from "../container.js";
 import { UnauthorizedError } from "../utils/api-error.js";
 
@@ -15,7 +16,10 @@ export const authenticate = async (
   const sessionToken: unknown = req.cookies[SESSION_COOKIE_NAME];
 
   if (typeof sessionToken !== "string") {
-    throw new UnauthorizedError("Authentication required");
+    throw new UnauthorizedError(
+      "Authentication required",
+      ErrorCodes.SESSION_EXPIRED,
+    );
   }
 
   const session = await authService.findValidSession(sessionToken);

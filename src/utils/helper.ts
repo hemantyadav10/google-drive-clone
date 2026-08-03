@@ -19,7 +19,7 @@ import { db } from "../db/index.js";
 async function recordExists(table: Table, conditions: SQL): Promise<boolean> {
   const res = await db.execute(sql`
     SELECT EXISTS(
-      SELECT 1 FROM ${table} 
+      SELECT 1 FROM ${table}
       WHERE ${conditions}
     ) AS "exists"`);
 
@@ -28,4 +28,74 @@ async function recordExists(table: Table, conditions: SQL): Promise<boolean> {
   return typeof result === "boolean" ? result : false;
 }
 
-export { recordExists };
+function formatRetryAfter(totalSeconds: number): string {
+  if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) {
+    return "a moment";
+  }
+
+  const seconds = Math.floor(totalSeconds);
+
+  if (seconds < 60) {
+    return `${seconds} second${seconds === 1 ? "" : "s"}`;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (minutes < 60) {
+    const minuteText = `${minutes} minute${minutes === 1 ? "" : "s"}`;
+
+    if (remainingSeconds === 0) {
+      return minuteText;
+    }
+
+    const secondText = `${remainingSeconds} second${
+      remainingSeconds === 1 ? "" : "s"
+    }`;
+
+    return `${minuteText} and ${secondText}`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (hours < 24) {
+    const hourText = `${hours} hour${hours === 1 ? "" : "s"}`;
+
+    if (remainingMinutes === 0) {
+      return hourText;
+    }
+
+    const minuteText = `${remainingMinutes} minute${
+      remainingMinutes === 1 ? "" : "s"
+    }`;
+
+    return `${hourText} and ${minuteText}`;
+  }
+
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+
+  const dayText = `${days} day${days === 1 ? "" : "s"}`;
+
+  if (remainingHours === 0) {
+    return dayText;
+  }
+
+  const hourText = `${remainingHours} hour${remainingHours === 1 ? "" : "s"}`;
+
+  return `${dayText} and ${hourText}`;
+}
+
+function formatDurationHuman(ms: number): string {
+  const hours = ms / (60 * 60 * 1000);
+
+  if (hours >= 1 && Number.isInteger(hours)) {
+    return `${hours} hour${hours === 1 ? "" : "s"}`;
+  }
+
+  const minutes = ms / (60 * 1000);
+  return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+}
+
+export { formatDurationHuman, formatRetryAfter, recordExists };

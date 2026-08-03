@@ -41,47 +41,38 @@ class ApiError extends Error {
 }
 
 class BadRequestError extends ApiError {
-  constructor(message = "Bad Request") {
-    super(message, {
-      statusCode: HttpStatus.BAD_REQUEST,
-      code: ErrorCodes.BAD_REQUEST,
-    });
+  constructor(
+    message = "Bad Request",
+    code: ErrorCode = ErrorCodes.BAD_REQUEST,
+  ) {
+    super(message, { statusCode: HttpStatus.BAD_REQUEST, code });
   }
 }
 
 class NotFoundError extends ApiError {
-  constructor(message = "Not Found") {
-    super(message, {
-      statusCode: HttpStatus.NOT_FOUND,
-      code: ErrorCodes.NOT_FOUND,
-    });
+  constructor(message = "Not Found", code: ErrorCode = ErrorCodes.NOT_FOUND) {
+    super(message, { statusCode: HttpStatus.NOT_FOUND, code });
   }
 }
 
 class UnauthorizedError extends ApiError {
-  constructor(message = "Unauthorized") {
-    super(message, {
-      statusCode: HttpStatus.UNAUTHORIZED,
-      code: ErrorCodes.UNAUTHORIZED,
-    });
+  constructor(
+    message = "Unauthorized",
+    code: ErrorCode = ErrorCodes.UNAUTHORIZED,
+  ) {
+    super(message, { statusCode: HttpStatus.UNAUTHORIZED, code });
   }
 }
 
 class ForbiddenError extends ApiError {
-  constructor(message = "Forbidden") {
-    super(message, {
-      statusCode: HttpStatus.FORBIDDEN,
-      code: ErrorCodes.FORBIDDEN,
-    });
+  constructor(message = "Forbidden", code: ErrorCode = ErrorCodes.FORBIDDEN) {
+    super(message, { statusCode: HttpStatus.FORBIDDEN, code });
   }
 }
 
 class ConflictError extends ApiError {
-  constructor(message = "Conflict") {
-    super(message, {
-      statusCode: HttpStatus.CONFLICT,
-      code: ErrorCodes.CONFLICT,
-    });
+  constructor(message = "Conflict", code: ErrorCode = ErrorCodes.CONFLICT) {
+    super(message, { statusCode: HttpStatus.CONFLICT, code });
   }
 }
 
@@ -95,6 +86,15 @@ class ValidationError extends ApiError {
   }
 }
 
+class TooManyRequestsError extends ApiError {
+  constructor(message = "Too many requests. Please try again later.") {
+    super(message, {
+      statusCode: HttpStatus.TOO_MANY_REQUESTS,
+      code: ErrorCodes.TOO_MANY_REQUESTS,
+    });
+  }
+}
+
 export {
   ApiError,
   BadRequestError,
@@ -103,4 +103,5 @@ export {
   NotFoundError,
   UnauthorizedError,
   ValidationError,
+  TooManyRequestsError,
 };

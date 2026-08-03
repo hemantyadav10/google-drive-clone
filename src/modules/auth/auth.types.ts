@@ -1,10 +1,7 @@
-export interface CreateSessionData {
-  userId: string;
-  tokenHash: string;
-  userAgent?: string | null;
-  ipAddress?: string | null;
-  expiresAt: Date;
-}
+import type { CreateUserSessionData, UserSession } from "../../db/schema.js";
+import type { UserProfile } from "../user/user.types.js";
+
+export type CreateSessionData = CreateUserSessionData;
 
 export interface SessionMetadata {
   userAgent: string | null;
@@ -13,17 +10,33 @@ export interface SessionMetadata {
 
 export interface LoginResult {
   sessionToken: string;
+  user: UserProfile;
 }
 
-export type SessionSummary = {
-  id: string;
-  userAgent: string | null;
-  ipAddress: string | null;
-  lastActiveAt: Date;
-  createdAt: Date;
-  expiresAt: Date;
-};
+export type SessionSummary = Pick<
+  UserSession,
+  | "id"
+  | "browserName"
+  | "osName"
+  | "deviceType"
+  | "ipAddress"
+  | "lastActiveAt"
+  | "createdAt"
+  | "expiresAt"
+>;
 
 export type SessionSummaryWithCurrent = SessionSummary & {
   isCurrent: boolean;
 };
+
+export type EmailVerificationTokenRecord = {
+  id: string;
+  userId: string;
+};
+
+export interface GoogleCallbackParams extends SessionMetadata {
+  code: string | undefined;
+  state: string | undefined;
+  storedState: string | undefined;
+  codeVerifier: string | undefined;
+}

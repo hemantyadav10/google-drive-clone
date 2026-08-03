@@ -1,16 +1,30 @@
 import http from "node:http";
 import app from "./app.js";
 import { env } from "./config/env.js";
+import { redis } from "./config/redis.js";
+import { emailService } from "./container.js";
 import { pool, testDbConnection } from "./db/index.js";
+import { EmailWorker } from "./modules/email/email.worker.js";
 import { logger } from "./utils/index.js";
 
 let server: http.Server;
 let isShuttingDown = false;
 const port = env.PORT ?? 8080;
+let emailWorker: EmailWorker;
 
 async function startServer(): Promise<void> {
   try {
     await testDbConnection();
+    try {
+      await redis.ping();
+    } catch {
+      logger.warn(
+        "Starting server without Redis — queue/rate-limit features degraded",
+      );
+    }
+
+    emailWorker = new EmailWorker(emailService);
+    logger.info("Email worker started");
 
     server = app.listen(port, () => {
       logger.info(`Server is running on http://localhost:${port}`);
@@ -55,6 +69,22 @@ const shutdownAndExit = async (signal: string) => {
     logger.info("Closing database connection pool...");
     await pool.end();
     logger.info("Database connection pool closed");
+
+    logger.info("Closing Redis connection...");
+    try {
+      await redis.quit();
+      logger.info("Redis connection closed");
+    } catch (error) {
+      logger.warn(
+        error as Error,
+        "Redis did not close cleanly, forcing disconnect",
+      );
+      redis.disconnect();
+    }
+
+    logger.info("Closing email worker...");
+    await emailWorker.close();
+    logger.info("Email worker closed");
 
     // Clear the timeout and exit cleanly
     clearTimeout(forceExit);
