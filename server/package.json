@@ -1,5 +1,5 @@
 {
-  "name": "drive-clone",
+  "name": "server",
   "version": "1.0.0",
   "description": "A cloud file storage and sharing platform",
   "license": "ISC",
@@ -20,8 +20,7 @@
     "lint:fix": "eslint . --fix",
     "lint:staged": "lint-staged",
     "format": "prettier . --write",
-    "format:check": "prettier . --check",
-    "prepare": "husky"
+    "format:check": "prettier . --check"
   },
   "dependencies": {
     "arctic": "^3.7.0",
