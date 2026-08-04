@@ -1,0 +1,27 @@
+{
+  "name": "drive-clone",
+  "version": "1.0.0",
+  "description": "A cloud file storage and sharing platform",
+  "private": true,
+  "homepage": "https://github.com/hemantyadav10/google-drive-clone#readme",
+  "bugs": {
+    "url": "https://github.com/hemantyadav10/google-drive-clone/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hemantyadav10/google-drive-clone.git"
+  },
+  "license": "ISC",
+  "author": "Hemant Yadav",
+  "type": "module",
+  "scripts": {
+    "prepare": "husky",
+    "dev": "concurrently \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.4",
+    "husky": "^9.1.7"
+  }
+}

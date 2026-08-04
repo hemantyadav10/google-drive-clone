@@ -154,7 +154,17 @@ build/
 # ---- Editor ----
 .vscode/
 .idea/
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # ---- OS ----
 .DS_Store
 Thumbs.db
+
+# Vite-specific
+dist-ssr
+*.local

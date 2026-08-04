@@ -1,8 +1,17 @@
-  echo "🔍 Running pre-commit checks..."
-  cd server || exit 1
+echo "🔍 Running pre-commit checks..."
 
-  npm run lint:staged
-  echo "🧠 Checking TypeScript types..."
-  npm run type-check
+echo "→ server"
+cd server || exit 1
+npm run lint:staged
+echo "🧠 Checking server TypeScript types..."
+npm run type-check
+cd ..
 
-  echo "✅ All checks passed. Proceeding with commit."
+echo "→ client"
+cd client || exit 1
+npm run lint:staged
+echo "🧠 Checking client TypeScript types..."
+npm run type-check
+cd ..
+
+echo "✅ All checks passed. Proceeding with commit."
