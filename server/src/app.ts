@@ -19,7 +19,7 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: [env.CLIENT_URL, "http://localhost:5174"],
+    origin: [env.CLIENT_URL, "http://localhost:5174", "http://localhost:4173"],
     credentials: true,
     exposedHeaders: [
       "Retry-After",

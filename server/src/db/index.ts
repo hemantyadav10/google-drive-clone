@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { env } from "../config/env.js";
 import { logger } from "../utils/index.js";
+import { drizzleLogger } from "./drizzle-logger.js";
 
 export const pool: Pool = new Pool({
   connectionString: env.DB_URL,
@@ -13,7 +14,7 @@ export const pool: Pool = new Pool({
 
 export const db = drizzle({
   client: pool,
-  logger: env.NODE_ENV === "development",
+  logger: env.NODE_ENV === "development" ? drizzleLogger : false,
 });
 
 export async function testDbConnection(): Promise<void> {

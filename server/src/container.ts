@@ -11,6 +11,9 @@ import { EmailQueue } from "./modules/email/email.queue.js";
 import { EmailService } from "./modules/email/email.service.js";
 import { MailPitProvider } from "./modules/email/providers/mailpit.provider.js";
 import { ResendProvider } from "./modules/email/providers/resend.provider.js";
+import { NodesController } from "./modules/nodes/nodes.controller.js";
+import { NodesRepository } from "./modules/nodes/nodes.repository.js";
+import { NodesService } from "./modules/nodes/nodes.service.js";
 import { UserController } from "./modules/user/user.controller.js";
 import { UserRepository } from "./modules/user/user.repository.js";
 import { UserService } from "./modules/user/user.service.js";
@@ -44,3 +47,7 @@ export const authService = new AuthService(
   accountRepository,
 );
 export const authController = new AuthController(authService);
+
+export const nodesRepository = new NodesRepository();
+export const nodesService = new NodesService(db, nodesRepository);
+export const nodesController = new NodesController(nodesService);

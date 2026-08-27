@@ -19,7 +19,7 @@ import {
   resetPasswordSchema,
   sessionIdParamsSchema,
   verifyEmailSchema,
-} from "./auth.schema.js";
+} from "./auth.validator.js";
 
 const authRouter = Router();
 

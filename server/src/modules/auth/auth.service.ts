@@ -39,7 +39,7 @@ import {
   type LoginDto,
   type RegisterDto,
   type ResetPasswordDto,
-} from "./auth.schema.js";
+} from "./auth.validator.js";
 import type {
   GoogleCallbackParams,
   LoginResult,

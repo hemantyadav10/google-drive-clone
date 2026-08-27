@@ -9,6 +9,9 @@ declare global {
       user?: AuthenticatedUser;
       sessionId?: string;
     }
+    interface Locals {
+      validatedQuery?: unknown;
+    }
   }
 }
 

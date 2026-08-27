@@ -27,7 +27,7 @@ import type {
   ResetPasswordDto,
   SessionIdParams,
   VerifyEmailDto,
-} from "./auth.schema.js";
+} from "./auth.validator.js";
 import type { AuthService } from "./auth.service.js";
 
 export class AuthController {

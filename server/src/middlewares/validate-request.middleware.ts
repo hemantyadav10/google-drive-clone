@@ -15,7 +15,7 @@ export function validate<K extends RequestProperty, T extends z.ZodType>(
   property: K,
   schema: T,
 ) {
-  return (req: Request, _res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     const result = schema.safeParse(req[property]);
 
     if (!result.success) {
@@ -23,7 +23,11 @@ export function validate<K extends RequestProperty, T extends z.ZodType>(
       return;
     }
 
-    req[property] = result.data as Request[K];
+    if (property === "query") {
+      res.locals.validatedQuery = result.data;
+    } else {
+      req[property] = result.data as Request[K];
+    }
 
     return next();
   };

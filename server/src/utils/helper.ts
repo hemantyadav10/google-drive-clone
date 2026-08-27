@@ -98,4 +98,9 @@ function formatDurationHuman(ms: number): string {
   return `${minutes} minute${minutes === 1 ? "" : "s"}`;
 }
 
-export { formatDurationHuman, formatRetryAfter, recordExists };
+function buildNodePath(id: string, parentPath?: string | null): string {
+  const label = id.replaceAll("-", "_");
+  return parentPath ? `${parentPath}.${label}` : label;
+}
+
+export { buildNodePath, formatDurationHuman, formatRetryAfter, recordExists };
