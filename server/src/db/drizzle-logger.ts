@@ -1,6 +1,6 @@
 import type { Logger } from "drizzle-orm";
 import { format } from "sql-formatter";
-import { logger } from "../utils/index.js";
+import { logger, stringifyParams } from "../utils/index.js";
 
 class DrizzleLogger implements Logger {
   logQuery(query: string, params: unknown[]): void {
@@ -13,7 +13,7 @@ class DrizzleLogger implements Logger {
     });
 
     logger.debug(
-      ["Database query:", sql, `params: ${JSON.stringify(params)}`].join("\n"),
+      ["Database query:", sql, `params: ${stringifyParams(params)}`].join("\n"),
     );
   }
 }

@@ -2,15 +2,17 @@ import http from "node:http";
 import app from "./app.js";
 import { env } from "./config/env.js";
 import { redis } from "./config/redis.js";
-import { emailService } from "./container.js";
+import { emailService, processingService } from "./container.js";
 import { pool, testDbConnection } from "./db/index.js";
 import { EmailWorker } from "./modules/email/email.worker.js";
+import { ProcessingWorker } from "./modules/processing/processing.worker.js";
 import { logger } from "./utils/index.js";
 
 let server: http.Server;
 let isShuttingDown = false;
 const port = env.PORT ?? 8080;
 let emailWorker: EmailWorker;
+let processingWorker: ProcessingWorker;
 
 async function startServer(): Promise<void> {
   try {
@@ -25,6 +27,9 @@ async function startServer(): Promise<void> {
 
     emailWorker = new EmailWorker(emailService);
     logger.info("Email worker started");
+
+    processingWorker = new ProcessingWorker(processingService);
+    logger.info("Processing worker started");
 
     server = app.listen(port, () => {
       logger.info(`Server is running on http://localhost:${port}`);
@@ -85,6 +90,10 @@ const shutdownAndExit = async (signal: string) => {
     logger.info("Closing email worker...");
     await emailWorker.close();
     logger.info("Email worker closed");
+
+    logger.info("Closing processing worker...");
+    await processingWorker.close();
+    logger.info("Processing worker closed");
 
     // Clear the timeout and exit cleanly
     clearTimeout(forceExit);

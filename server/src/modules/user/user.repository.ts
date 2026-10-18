@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import type { DbClient } from "../../db/index.js";
+import type { Database, DbExecutor } from "../../db/index.js";
 import {
   accounts,
   users,
@@ -16,7 +16,12 @@ import type {
 } from "./user.types.js";
 
 export class UserRepository {
-  async findByEmail(db: DbClient, email: string): Promise<User | null> {
+  constructor(private readonly db: Database) {}
+
+  async findByEmail(
+    email: string,
+    db: DbExecutor = this.db,
+  ): Promise<User | null> {
     const [user] = await db
       .select()
       .from(users)
@@ -26,7 +31,7 @@ export class UserRepository {
     return user ?? null;
   }
 
-  async findById(db: DbClient, id: string): Promise<User | null> {
+  async findById(id: string, db: DbExecutor = this.db): Promise<User | null> {
     const [user] = await db
       .select()
       .from(users)
@@ -37,9 +42,9 @@ export class UserRepository {
   }
 
   async findByProvider(
-    db: DbClient,
     provider: ProviderType,
     providerId: string,
+    db: DbExecutor = this.db,
   ): Promise<User | null> {
     const [row] = await db
       .select({ user: users })
@@ -57,8 +62,8 @@ export class UserRepository {
   }
 
   async createUserIfNotExists(
-    db: DbClient,
     data: CreateUserDto,
+    db: DbExecutor = this.db,
   ): Promise<User | null> {
     const [user] = await db
       .insert(users)
@@ -68,14 +73,20 @@ export class UserRepository {
     return user ?? null;
   }
 
-  async createOAuthUser(db: DbClient, data: CreateOAuthUserDto): Promise<User> {
+  async createOAuthUser(
+    data: CreateOAuthUserDto,
+    db: DbExecutor = this.db,
+  ): Promise<User> {
     const [user] = await db.insert(users).values(data).returning();
     if (!user) throw new ApiError("Failed to create user");
 
     return user;
   }
 
-  async markEmailVerified(db: DbClient, userId: string): Promise<void> {
+  async markEmailVerified(
+    userId: string,
+    db: DbExecutor = this.db,
+  ): Promise<void> {
     await db
       .update(users)
       .set({ isEmailVerified: true, emailVerifiedAt: new Date() })
@@ -83,8 +94,8 @@ export class UserRepository {
   }
 
   async updatePassword(
-    db: DbClient,
     data: UpdatePasswordDto,
+    db: DbExecutor = this.db,
   ): Promise<UserId | null> {
     const [result] = await db
       .update(users)
@@ -96,8 +107,8 @@ export class UserRepository {
   }
 
   async updateUnverifiedUser(
-    db: DbClient,
     data: UpdateUnverifiedUserDto,
+    db: DbExecutor = this.db,
   ): Promise<User | null> {
     const [user] = await db
       .update(users)

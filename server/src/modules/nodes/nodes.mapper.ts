@@ -1,43 +1,43 @@
 import type { Node } from "../../db/schema.js";
+import type { NodeWithThumbnail } from "./nodes.types.js";
 
-function toFolderResponse(node: Node) {
+export function toNodeResponseWithThumbnail(node: NodeWithThumbnail) {
   return {
     id: node.id,
     type: node.type,
     name: node.name,
-    description: node.description,
     parentId: node.parentId,
-    path: node.path,
     folderColor: node.folderColor,
-    isTrashed: node.isTrashed,
-    trashedAt: node.trashedAt,
-    createdAt: node.createdAt,
-    updatedAt: node.updatedAt,
-  };
-}
-
-function toFileResponse(node: Node) {
-  return {
-    id: node.id,
-    type: node.type,
-    name: node.name,
-    description: node.description,
-    parentId: node.parentId,
-    path: node.path,
     mimeType: node.mimeType,
     sizeBytes: node.sizeBytes,
-    fileThumbnailUrl: node.fileThumbnailUrl,
     contentModifiedAt: node.contentModifiedAt,
-    width: node.width,
-    height: node.height,
-    duration: node.duration,
-    isTrashed: node.isTrashed,
-    trashedAt: node.trashedAt,
     createdAt: node.createdAt,
     updatedAt: node.updatedAt,
+    processingStatus: node.processingStatus,
+    thumbnailSmallUrl: node.thumbnailSmallUrl,
   };
 }
 
 export function toNodeResponse(node: Node) {
-  return node.type === "folder" ? toFolderResponse(node) : toFileResponse(node);
+  return {
+    id: node.id,
+    type: node.type,
+    name: node.name,
+    parentId: node.parentId,
+    folderColor: node.folderColor,
+    mimeType: node.mimeType,
+    sizeBytes: node.sizeBytes,
+    contentModifiedAt: node.contentModifiedAt,
+    createdAt: node.createdAt,
+    updatedAt: node.updatedAt,
+    processingStatus: node.processingStatus,
+  };
+}
+
+export function toNodeSummaryResponse(node: Node) {
+  return {
+    id: node.id,
+    name: node.name,
+    folderColor: node.folderColor,
+  };
 }

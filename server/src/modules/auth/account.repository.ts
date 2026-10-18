@@ -1,4 +1,4 @@
-import type { DbClient } from "../../db/index.js";
+import type { Database, DbExecutor } from "../../db/index.js";
 import {
   accounts,
   type Account,
@@ -7,7 +7,12 @@ import {
 import { ApiError } from "../../utils/api-error.js";
 
 export class AccountRepository {
-  async create(db: DbClient, data: CreateAccountData): Promise<Account> {
+  constructor(private readonly db: Database) {}
+
+  async create(
+    data: CreateAccountData,
+    db: DbExecutor = this.db,
+  ): Promise<Account> {
     const [account] = await db.insert(accounts).values(data).returning();
     if (!account) throw new ApiError("Failed to create account");
 

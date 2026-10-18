@@ -1,14 +1,14 @@
-import nodemailer from "nodemailer";
+import { createTransport, type Transporter } from "nodemailer";
 import { env } from "../../../config/env.js";
 import { logger } from "../../../utils/logger.js";
 import type { EmailProvider } from "../email-provider.interface.js";
 import type { SendEmailOptions } from "../email.types.js";
 
 export class MailPitProvider implements EmailProvider {
-  private readonly transporter: nodemailer.Transporter;
+  private readonly transporter: Transporter;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
+    this.transporter = createTransport({
       host: env.MAILPIT_HOST,
       port: env.MAILPIT_PORT,
       secure: false,

@@ -27,6 +27,20 @@ services:
       - "8025:8025"
       - "1025:1025"
 
+  minio:
+    image: minio/minio
+    container_name: drive-clone-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-password123}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
 volumes:
   pg_data:
   redis_data:
+  minio_data:

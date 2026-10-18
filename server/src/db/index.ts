@@ -2,7 +2,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { env } from "../config/env.js";
 import { logger } from "../utils/index.js";
-import { drizzleLogger } from "./drizzle-logger.js";
+// import { drizzleLogger } from "./drizzle-logger.js";
 
 export const pool: Pool = new Pool({
   connectionString: env.DB_URL,
@@ -14,7 +14,7 @@ export const pool: Pool = new Pool({
 
 export const db = drizzle({
   client: pool,
-  logger: env.NODE_ENV === "development" ? drizzleLogger : false,
+  // logger: env.NODE_ENV === "development" ? drizzleLogger : false,
 });
 
 export async function testDbConnection(): Promise<void> {
@@ -29,5 +29,4 @@ export async function testDbConnection(): Promise<void> {
 
 export type Database = typeof db;
 export type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
-
-export type DbClient = Database | Transaction;
+export type DbExecutor = Database | Transaction;

@@ -1,5 +1,7 @@
 import { sql, type SQL, type Table } from "drizzle-orm";
+import path from "path";
 import { db } from "../db/index.js";
+import { generateUUIDv7 } from "./uuid.js";
 
 /**
  * Checks whether at least one row exists in the given table that matches the specified conditions.
@@ -103,4 +105,54 @@ function buildNodePath(id: string, parentPath?: string | null): string {
   return parentPath ? `${parentPath}.${label}` : label;
 }
 
-export { buildNodePath, formatDurationHuman, formatRetryAfter, recordExists };
+function generateObjectKey(userId: string, originalFilename: string): string {
+  const fileId = generateUUIDv7();
+  const extension = path.extname(originalFilename).toLowerCase();
+  return `${userId}/${fileId}${extension}`;
+}
+
+function getMultipartPlan(totalSize: number): {
+  partSize: number;
+  totalParts: number;
+} {
+  const MIN_PART_SIZE_BYTES = 16 * 1024 * 1024; // 16MB
+  const MAX_PART_SIZE_BYTES = 512 * 1024 * 1024; // 512MB
+  const MAX_PARTS = 10_000;
+
+  const GB = 1024 * 1024 * 1024;
+
+  let partSize: number;
+  if (totalSize < 1 * GB) {
+    partSize = 16 * 1024 * 1024; // 16MB
+  } else if (totalSize < 10 * GB) {
+    partSize = 64 * 1024 * 1024; // 64MB
+  } else if (totalSize < 100 * GB) {
+    partSize = 128 * 1024 * 1024; // 128MB
+  } else {
+    partSize = 256 * 1024 * 1024; // 256MB
+  }
+
+  partSize = Math.min(
+    Math.max(partSize, Math.ceil(totalSize / MAX_PARTS), MIN_PART_SIZE_BYTES),
+    MAX_PART_SIZE_BYTES,
+  );
+
+  const totalParts = Math.ceil(totalSize / partSize);
+  return { partSize, totalParts };
+}
+
+function stringifyParams(params: unknown[]): string {
+  return JSON.stringify(params, (_key, value) =>
+    typeof value === "bigint" ? value.toString() : value,
+  );
+}
+
+export {
+  buildNodePath,
+  formatDurationHuman,
+  formatRetryAfter,
+  generateObjectKey,
+  getMultipartPlan,
+  recordExists,
+  stringifyParams,
+};

@@ -1,16 +1,18 @@
 import { and, eq, gt } from "drizzle-orm";
-import type { DbClient } from "../../db/index.js";
+import type { Database, DbExecutor } from "../../db/index.js";
 import { emailVerificationTokens } from "../../db/schema.js";
 import type { EmailVerificationTokenRecord } from "./auth.types.js";
 
 export class EmailVerificationRepository {
+  constructor(private readonly db: Database) {}
+
   async upsert(
-    db: DbClient,
     data: {
       userId: string;
       tokenHash: string;
       expiresAt: Date;
     },
+    db: DbExecutor = this.db,
   ): Promise<void> {
     await db
       .insert(emailVerificationTokens)
@@ -22,8 +24,8 @@ export class EmailVerificationRepository {
   }
 
   async deleteValidToken(
-    db: DbClient,
     tokenHash: string,
+    db: DbExecutor = this.db,
   ): Promise<EmailVerificationTokenRecord | null> {
     const [deleted] = await db
       .delete(emailVerificationTokens)

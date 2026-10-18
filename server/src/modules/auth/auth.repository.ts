@@ -1,13 +1,15 @@
 import { and, desc, eq, gt, ne } from "drizzle-orm";
-import type { DbClient } from "../../db/index.js";
+import type { Database, DbExecutor } from "../../db/index.js";
 import { userSessions, type UserSession } from "../../db/schema.js";
 import { ApiError } from "../../utils/api-error.js";
 import type { CreateSessionData, SessionSummary } from "./auth.types.js";
 
 export class AuthRepository {
+  constructor(private readonly db: Database) {}
+
   async createSession(
-    db: DbClient,
     data: CreateSessionData,
+    db: DbExecutor = this.db,
   ): Promise<UserSession> {
     const [session] = await db.insert(userSessions).values(data).returning();
     if (!session) throw new ApiError("Failed to create session");
@@ -15,13 +17,16 @@ export class AuthRepository {
     return session;
   }
 
-  async deleteSession(db: DbClient, tokenHash: string): Promise<void> {
+  async deleteSession(
+    tokenHash: string,
+    db: DbExecutor = this.db,
+  ): Promise<void> {
     await db.delete(userSessions).where(eq(userSessions.tokenHash, tokenHash));
   }
 
   async findValidSession(
-    db: DbClient,
     tokenHash: string,
+    db: DbExecutor = this.db,
   ): Promise<UserSession | null> {
     const [session] = await db
       .select()
@@ -36,13 +41,16 @@ export class AuthRepository {
     return session ?? null;
   }
 
-  async deleteAllSessionsForUser(db: DbClient, userId: string): Promise<void> {
+  async deleteAllSessionsForUser(
+    userId: string,
+    db: DbExecutor = this.db,
+  ): Promise<void> {
     await db.delete(userSessions).where(eq(userSessions.userId, userId));
   }
 
   async findAllSessionsForUser(
-    db: DbClient,
     userId: string,
+    db: DbExecutor = this.db,
   ): Promise<SessionSummary[]> {
     return db
       .select({
@@ -66,9 +74,9 @@ export class AuthRepository {
   }
 
   async deleteSessionForUser(
-    db: DbClient,
     sessionId: string,
     userId: string,
+    db: DbExecutor = this.db,
   ): Promise<boolean> {
     const result = await db
       .delete(userSessions)
@@ -81,9 +89,9 @@ export class AuthRepository {
   }
 
   async deleteAllSessionsForUserExcept(
-    db: DbClient,
     userId: string,
     currentSessionId: string,
+    db: DbExecutor = this.db,
   ): Promise<void> {
     await db
       .delete(userSessions)
@@ -95,7 +103,10 @@ export class AuthRepository {
       );
   }
 
-  async touchLastActive(db: DbClient, sessionId: string): Promise<void> {
+  async touchLastActive(
+    sessionId: string,
+    db: DbExecutor = this.db,
+  ): Promise<void> {
     await db
       .update(userSessions)
       .set({ lastActiveAt: new Date() })

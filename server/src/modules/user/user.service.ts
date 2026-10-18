@@ -1,4 +1,4 @@
-import type { DbClient } from "../../db/index.js";
+import type { Database, DbExecutor } from "../../db/index.js";
 import type { ProviderType, User } from "../../db/schema.js";
 import type { UserRepository } from "./user.repository.js";
 import type {
@@ -11,52 +11,57 @@ import type {
 
 export class UserService {
   constructor(
-    private readonly db: DbClient,
+    private readonly db: Database,
     private readonly userRepository: UserRepository,
   ) {}
 
-  findUserByEmail(db: DbClient, email: string): Promise<User | null> {
-    return this.userRepository.findByEmail(db, email);
+  findUserByEmail(
+    email: string,
+    tx: DbExecutor = this.db,
+  ): Promise<User | null> {
+    return this.userRepository.findByEmail(email, tx);
   }
 
   findUserById(id: string): Promise<User | null> {
-    return this.userRepository.findById(this.db, id);
+    return this.userRepository.findById(id);
   }
 
-  async createUserIfNotExists(
-    db: DbClient,
+  createUserIfNotExists(
     data: CreateUserDto,
+    tx: DbExecutor = this.db,
   ): Promise<User | null> {
-    return this.userRepository.createUserIfNotExists(db, data);
+    return this.userRepository.createUserIfNotExists(data, tx);
   }
 
-  async createOAuthUser(db: DbClient, data: CreateOAuthUserDto): Promise<User> {
-    return this.userRepository.createOAuthUser(db, data);
+  createOAuthUser(
+    data: CreateOAuthUserDto,
+    tx: DbExecutor = this.db,
+  ): Promise<User> {
+    return this.userRepository.createOAuthUser(data, tx);
   }
 
-  async markEmailVerified(db: DbClient, userId: string): Promise<void> {
-    await this.userRepository.markEmailVerified(db, userId);
+  markEmailVerified(userId: string, tx: DbExecutor = this.db): Promise<void> {
+    return this.userRepository.markEmailVerified(userId, tx);
   }
 
-  async updatePassword(
-    db: DbClient,
+  updatePassword(
     data: UpdatePasswordDto,
+    tx: DbExecutor = this.db,
   ): Promise<UserId | null> {
-    return this.userRepository.updatePassword(db, data);
+    return this.userRepository.updatePassword(data, tx);
   }
 
-  async updateUnverifiedUser(
-    db: DbClient,
+  updateUnverifiedUser(
     data: UpdateUnverifiedUserDto,
+    tx: DbExecutor = this.db,
   ): Promise<User | null> {
-    return this.userRepository.updateUnverifiedUser(db, data);
+    return this.userRepository.updateUnverifiedUser(data, tx);
   }
 
-  async findUserByProvider(
-    db: DbClient,
+  findUserByProvider(
     provider: ProviderType,
     providerId: string,
   ): Promise<User | null> {
-    return this.userRepository.findByProvider(db, provider, providerId);
+    return this.userRepository.findByProvider(provider, providerId);
   }
 }

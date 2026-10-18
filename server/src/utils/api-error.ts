@@ -15,6 +15,7 @@ export interface ApiErrorOptions {
   statusCode?: HttpStatusCode;
   code?: ErrorCode;
   errors?: ValidationIssue[];
+  cause?: unknown;
 }
 
 class ApiError extends Error {
@@ -29,9 +30,10 @@ class ApiError extends Error {
       statusCode = HttpStatus.INTERNAL_SERVER_ERROR,
       code = ErrorCodes.INTERNAL_SERVER_ERROR,
       errors,
+      cause,
     }: ApiErrorOptions = {},
   ) {
-    super(message);
+    super(message, { cause });
     this.statusCode = statusCode;
     this.code = code;
     this.errors = errors;
@@ -101,7 +103,7 @@ export {
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  TooManyRequestsError,
   UnauthorizedError,
   ValidationError,
-  TooManyRequestsError,
 };

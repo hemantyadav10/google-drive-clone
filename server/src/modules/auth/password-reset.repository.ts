@@ -1,14 +1,16 @@
 import { and, eq, gt } from "drizzle-orm";
-import type { DbClient } from "../../db/index.js";
+import type { Database, DbExecutor } from "../../db/index.js";
 import {
   passwordResetTokens,
   type PasswordResetToken,
 } from "../../db/schema.js";
 
 export class PasswordResetRepository {
+  constructor(private readonly db: Database) {}
+
   async findValidToken(
-    db: DbClient,
     tokenHash: string,
+    db: DbExecutor = this.db,
   ): Promise<PasswordResetToken | null> {
     const [token] = await db
       .select()
@@ -24,8 +26,8 @@ export class PasswordResetRepository {
   }
 
   async upsert(
-    db: DbClient,
     data: { userId: string; tokenHash: string; expiresAt: Date },
+    db: DbExecutor = this.db,
   ): Promise<void> {
     await db
       .insert(passwordResetTokens)
@@ -37,8 +39,8 @@ export class PasswordResetRepository {
   }
 
   async deleteValidToken(
-    db: DbClient,
     tokenHash: string,
+    db: DbExecutor = this.db,
   ): Promise<PasswordResetToken | null> {
     const [deleted] = await db
       .delete(passwordResetTokens)

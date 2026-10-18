@@ -32,6 +32,12 @@ import type { UserService } from "../user/user.service.js";
 import { toUserProfile } from "../user/user.types.js";
 import type { AccountRepository } from "./account.repository.js";
 import type { AuthRepository } from "./auth.repository.js";
+import type {
+  GoogleCallbackParams,
+  LoginResult,
+  SessionMetadata,
+  SessionSummaryWithCurrent,
+} from "./auth.types.js";
 import {
   googleIdTokenPayloadSchema,
   type ChangePasswordDto,
@@ -40,12 +46,6 @@ import {
   type RegisterDto,
   type ResetPasswordDto,
 } from "./auth.validator.js";
-import type {
-  GoogleCallbackParams,
-  LoginResult,
-  SessionMetadata,
-  SessionSummaryWithCurrent,
-} from "./auth.types.js";
 import type { EmailVerificationRepository } from "./email-verification.repository.js";
 import type { PasswordResetRepository } from "./password-reset.repository.js";
 
@@ -86,11 +86,14 @@ export class AuthService {
     const verificationUser = await this.db.transaction(async (tx) => {
       // Avoids exception-driven control flow for duplicate registrations by
       // returning null when the email is already in use.
-      let user = await this.userService.createUserIfNotExists(tx, {
-        email,
-        fullName,
-        passwordHash,
-      });
+      let user = await this.userService.createUserIfNotExists(
+        {
+          email,
+          fullName,
+          passwordHash,
+        },
+        tx,
+      );
 
       if (!user) {
         logger.info(
@@ -98,7 +101,7 @@ export class AuthService {
           "Registration attempted for an existing account",
         );
 
-        const existingUser = await this.userService.findUserByEmail(tx, email);
+        const existingUser = await this.userService.findUserByEmail(email, tx);
 
         if (!existingUser) {
           // Unexpected: a unique constraint violation occurred, but the conflicting
@@ -120,11 +123,14 @@ export class AuthService {
 
         // Allow an existing unverified account to complete registration by
         // replacing the pending credentials and issuing a fresh verification link.
-        user = await this.userService.updateUnverifiedUser(tx, {
-          userId: existingUser.id,
-          fullName,
-          passwordHash,
-        });
+        user = await this.userService.updateUnverifiedUser(
+          {
+            userId: existingUser.id,
+            fullName,
+            passwordHash,
+          },
+          tx,
+        );
       }
 
       if (!user) {
@@ -133,11 +139,14 @@ export class AuthService {
 
       // Keep exactly one active verification token per user. Issuing a new
       // token implicitly invalidates all previously generated verification links.
-      await this.emailVerificationRepository.upsert(tx, {
-        userId: user.id,
-        tokenHash,
-        expiresAt,
-      });
+      await this.emailVerificationRepository.upsert(
+        {
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+        },
+        tx,
+      );
 
       return user;
     });
@@ -164,10 +173,7 @@ export class AuthService {
     loginUserDto: LoginDto,
     metadata: SessionMetadata,
   ): Promise<LoginResult> {
-    const user = await this.userService.findUserByEmail(
-      this.db,
-      loginUserDto.email,
-    );
+    const user = await this.userService.findUserByEmail(loginUserDto.email);
 
     const passwordHash = user?.passwordHash ?? DUMMY_PASSWORD_HASH;
 
@@ -198,16 +204,13 @@ export class AuthService {
   async logout(sessionToken: string): Promise<void> {
     const tokenHash = hashToken(sessionToken);
 
-    await this.authRepository.deleteSession(this.db, tokenHash);
+    await this.authRepository.deleteSession(tokenHash);
   }
 
   async findValidSession(sessionToken: string): Promise<UserSession> {
     const tokenHash = hashToken(sessionToken);
 
-    const session = await this.authRepository.findValidSession(
-      this.db,
-      tokenHash,
-    );
+    const session = await this.authRepository.findValidSession(tokenHash);
 
     if (!session) {
       throw new UnauthorizedError(
@@ -219,7 +222,7 @@ export class AuthService {
     const staleBy = Date.now() - session.lastActiveAt.getTime();
     if (staleBy > LAST_ACTIVE_UPDATE_THRESHOLD_MS) {
       this.authRepository
-        .touchLastActive(this.db, session.id)
+        .touchLastActive(session.id)
         .catch((err) => logger.error({ err }, "Failed to update lastActiveAt"));
     }
 
@@ -227,17 +230,14 @@ export class AuthService {
   }
 
   async logoutAll(userId: string): Promise<void> {
-    await this.authRepository.deleteAllSessionsForUser(this.db, userId);
+    await this.authRepository.deleteAllSessionsForUser(userId);
   }
 
   async listSessions(
     userId: string,
     currentSessionId: string,
   ): Promise<SessionSummaryWithCurrent[]> {
-    const sessions = await this.authRepository.findAllSessionsForUser(
-      this.db,
-      userId,
-    );
+    const sessions = await this.authRepository.findAllSessionsForUser(userId);
 
     const withCurrent = sessions.map((session) => ({
       ...session,
@@ -253,7 +253,6 @@ export class AuthService {
 
   async revokeSession(sessionId: string, userId: string): Promise<void> {
     const deleted = await this.authRepository.deleteSessionForUser(
-      this.db,
       sessionId,
       userId,
     );
@@ -268,8 +267,8 @@ export class AuthService {
 
     await this.db.transaction(async (tx) => {
       const record = await this.emailVerificationRepository.deleteValidToken(
-        tx,
         tokenHash,
+        tx,
       );
 
       if (!record) {
@@ -278,7 +277,7 @@ export class AuthService {
         );
       }
 
-      await this.userService.markEmailVerified(tx, record.userId);
+      await this.userService.markEmailVerified(record.userId, tx);
     });
   }
 
@@ -287,7 +286,7 @@ export class AuthService {
     const tokenHash = hashToken(token);
     const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_LIFETIME_MS);
 
-    const user = await this.userService.findUserByEmail(this.db, email);
+    const user = await this.userService.findUserByEmail(email);
 
     if (!user) {
       // NOTE:
@@ -298,7 +297,7 @@ export class AuthService {
       return;
     }
 
-    await this.passwordResetRepository.upsert(this.db, {
+    await this.passwordResetRepository.upsert({
       tokenHash,
       userId: user.id,
       expiresAt,
@@ -322,10 +321,8 @@ export class AuthService {
     const { token, password } = resetPasswordDto;
     const tokenHash = hashToken(token);
 
-    const validToken = await this.passwordResetRepository.findValidToken(
-      this.db,
-      tokenHash,
-    );
+    const validToken =
+      await this.passwordResetRepository.findValidToken(tokenHash);
     if (!validToken) {
       throw new BadRequestError("This reset link is invalid or has expired");
     }
@@ -347,22 +344,25 @@ export class AuthService {
 
     await this.db.transaction(async (tx) => {
       const resetPasswordToken =
-        await this.passwordResetRepository.deleteValidToken(tx, tokenHash);
+        await this.passwordResetRepository.deleteValidToken(tokenHash, tx);
       if (!resetPasswordToken) {
         throw new BadRequestError("This reset link is invalid or has expired");
       }
 
-      const updatedUser = await this.userService.updatePassword(tx, {
-        passwordHash,
-        userId: resetPasswordToken.userId,
-      });
+      const updatedUser = await this.userService.updatePassword(
+        {
+          passwordHash,
+          userId: resetPasswordToken.userId,
+        },
+        tx,
+      );
       if (!updatedUser) {
         throw new NotFoundError("User no longer exists");
       }
 
       await this.authRepository.deleteAllSessionsForUser(
-        tx,
         resetPasswordToken.userId,
+        tx,
       );
     });
 
@@ -416,18 +416,21 @@ export class AuthService {
     const passwordHash = await hashPassword(newPassword);
 
     await this.db.transaction(async (tx) => {
-      const updatedUser = await this.userService.updatePassword(tx, {
-        userId,
-        passwordHash,
-      });
+      const updatedUser = await this.userService.updatePassword(
+        {
+          userId,
+          passwordHash,
+        },
+        tx,
+      );
       if (!updatedUser) {
         throw new NotFoundError("User no longer exists");
       }
 
       await this.authRepository.deleteAllSessionsForUserExcept(
-        tx,
         userId,
         currentSessionId,
+        tx,
       );
     });
 
@@ -526,35 +529,33 @@ export class AuthService {
     claims: GoogleIdTokenPayload,
   ): Promise<User> {
     const existingByGoogleId = await this.userService.findUserByProvider(
-      this.db,
       "google",
       claims.sub,
     );
     if (existingByGoogleId) {
       if (!existingByGoogleId.isEmailVerified) {
-        await this.userService.markEmailVerified(
-          this.db,
-          existingByGoogleId.id,
-        );
+        await this.userService.markEmailVerified(existingByGoogleId.id);
         return { ...existingByGoogleId, isEmailVerified: true };
       }
       return existingByGoogleId;
     }
 
     const existingByEmail = await this.userService.findUserByEmail(
-      this.db,
       claims.email,
     );
     if (existingByEmail) {
       await this.db.transaction(async (tx) => {
-        await this.accountRepository.create(tx, {
-          provider: "google",
-          providerId: claims.sub,
-          userId: existingByEmail.id,
-        });
+        await this.accountRepository.create(
+          {
+            provider: "google",
+            providerId: claims.sub,
+            userId: existingByEmail.id,
+          },
+          tx,
+        );
 
         if (!existingByEmail.isEmailVerified) {
-          await this.userService.markEmailVerified(tx, existingByEmail.id);
+          await this.userService.markEmailVerified(existingByEmail.id, tx);
         }
       });
 
@@ -562,26 +563,32 @@ export class AuthService {
     }
 
     return this.db.transaction(async (tx) => {
-      const newUser = await this.userService.createOAuthUser(tx, {
-        email: claims.email,
-        fullName: claims.name,
-        emailVerifiedAt: new Date(),
-        profilePicture: claims.picture,
-        isEmailVerified: claims.email_verified,
-      });
+      const newUser = await this.userService.createOAuthUser(
+        {
+          email: claims.email,
+          fullName: claims.name,
+          emailVerifiedAt: new Date(),
+          profilePicture: claims.picture,
+          isEmailVerified: claims.email_verified,
+        },
+        tx,
+      );
 
-      await this.accountRepository.create(tx, {
-        provider: "google",
-        providerId: claims.sub,
-        userId: newUser.id,
-      });
+      await this.accountRepository.create(
+        {
+          provider: "google",
+          providerId: claims.sub,
+          userId: newUser.id,
+        },
+        tx,
+      );
 
       return newUser;
     });
   }
 
   async resendVerificationEmail(email: string): Promise<void> {
-    const user = await this.userService.findUserByEmail(this.db, email);
+    const user = await this.userService.findUserByEmail(email);
 
     // Return silently to prevent account enumeration.
     if (!user || user.isEmailVerified) return;
@@ -591,7 +598,7 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_LIFETIME_MS);
 
     // Replace the previous token — only the newest verification link remains valid.
-    await this.emailVerificationRepository.upsert(this.db, {
+    await this.emailVerificationRepository.upsert({
       userId: user.id,
       tokenHash,
       expiresAt,
@@ -622,7 +629,7 @@ export class AuthService {
 
     const { browser, device, os } = parseUserAgent(metadata.userAgent ?? "");
 
-    await this.authRepository.createSession(this.db, {
+    await this.authRepository.createSession({
       userId: user.id,
       tokenHash,
       expiresAt,
