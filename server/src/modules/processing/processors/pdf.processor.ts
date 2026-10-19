@@ -1,5 +1,6 @@
 import { createWriteStream } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
@@ -14,6 +15,13 @@ import {
   THUMBNAIL_WEBP_QUALITY,
 } from "../processing.constants.js";
 import type { ProcessingResult } from "../processing.types.js";
+
+const require = createRequire(import.meta.url);
+const pdfjsDir = path.dirname(require.resolve("pdfjs-dist/package.json"));
+const toDirUrl = (dir: string) => dir.replaceAll("\\", "/") + "/";
+
+const STANDARD_FONT_DIR = toDirUrl(path.join(pdfjsDir, "standard_fonts"));
+const WASM_DIR = toDirUrl(path.join(pdfjsDir, "wasm"));
 
 const MAX_PDF_SIZE_FOR_THUMBNAIL = 100 * 1024 * 1024; // 100MB
 
@@ -50,7 +58,14 @@ export class PdfProcessor {
     try {
       await pipeline(bodyStream, createWriteStream(tmpPath));
 
-      const document = await pdf(tmpPath, { scale: 1, format: "jpg" });
+      const document = await pdf(tmpPath, {
+        scale: 1,
+        format: "jpg",
+        docInitParams: {
+          standardFontDataUrl: STANDARD_FONT_DIR,
+          wasmUrl: WASM_DIR,
+        },
+      });
       const pageCount = document.length;
 
       let firstPageBuffer: Buffer;
