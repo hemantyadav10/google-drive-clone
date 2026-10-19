@@ -41,7 +41,7 @@ export class NodesRepository {
   }
 
   async findSiblingNames(
-    parentId: string | null,
+    { parentId, userId }: { parentId: string | null; userId: string },
     db: DbExecutor = this.db,
   ): Promise<string[]> {
     const result = await db
@@ -49,13 +49,14 @@ export class NodesRepository {
       .from(nodes)
       .where(
         and(
+          eq(nodes.createdBy, userId),
+          eq(nodes.isTrashed, false),
           parentId === null
             ? isNull(nodes.parentId)
             : eq(nodes.parentId, parentId),
-          eq(nodes.isTrashed, false),
         ),
       );
-    return result.map((node) => node.name);
+    return result.map((r) => r.name);
   }
 
   async findNodes(

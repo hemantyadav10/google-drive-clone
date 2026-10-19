@@ -50,7 +50,12 @@ export class NodesService {
       nodePath = buildNodePath(nodePath, parentNode.path);
     }
 
-    const uniqueName = await this.resolveUniqueName(data.name, data.parentId);
+    const uniqueName = await this.resolveUniqueName({
+      baseName: data.name,
+      isFolder: true,
+      parentId: data.parentId,
+      userId: userId,
+    });
 
     const result = await this.nodesRepository.createFolder({
       ...data,
@@ -96,23 +101,38 @@ export class NodesService {
     return { ...node, ancestors, thumbnailMediumUrl };
   }
 
+  // TODO: Fetch only names that could collide instead of all sibling names.
+  // TODO: Make naming safe under concurrent requests (per-folder lock, unique index as backstop).
   private async resolveUniqueName(
-    baseName: string,
-    parentId: string | null,
+    {
+      baseName,
+      isFolder,
+      parentId,
+      userId,
+    }: {
+      baseName: string;
+      parentId: string | null;
+      userId: string;
+      isFolder: boolean;
+    },
     tx: DbExecutor = this.db,
   ): Promise<string> {
-    const siblings = await this.nodesRepository.findSiblingNames(parentId, tx);
-
-    const siblingNames = new Set(siblings);
+    const siblingNames = new Set(
+      await this.nodesRepository.findSiblingNames({ parentId, userId }, tx),
+    );
 
     if (!siblingNames.has(baseName)) return baseName;
 
+    const dot = isFolder ? -1 : baseName.lastIndexOf(".");
+    const stem = dot < 0 ? baseName : baseName.slice(0, dot);
+    const ext = dot < 0 ? "" : baseName.slice(dot);
+
     let counter = 1;
-    let candidate = `${baseName} (${counter})`;
+    let candidate = `${stem} (${counter})${ext}`;
 
     while (siblingNames.has(candidate)) {
       counter++;
-      candidate = `${baseName} (${counter})`;
+      candidate = `${stem} (${counter})${ext}`;
     }
 
     return candidate;
@@ -236,8 +256,12 @@ export class NodesService {
     }
 
     const uniqueName = await this.resolveUniqueName(
-      data.name,
-      data.parentId,
+      {
+        baseName: data.name,
+        isFolder: false,
+        parentId: data.parentId,
+        userId,
+      },
       tx,
     );
 
